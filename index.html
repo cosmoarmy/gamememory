@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Memoria Personalizado</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #game-board { 
+            display: grid; 
+            grid-template-columns: repeat(10, 100px); 
+            grid-template-rows: repeat(4, 100px); 
+            gap: 10px; 
+            justify-content: center; 
+            margin-top: 20px; 
+            visibility: hidden;
+            position: relative;
+            justify-items: center;  /* Asegura que las cartas se centren en cada celda */
+        }
+        .card { 
+            width: 100px; 
+            height: 100px; 
+            background: gray; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+        }
+        .card img { 
+            width: 100%; 
+            height: 100%; 
+            display: none; 
+        }
+        .flipped img { 
+            display: block; 
+        }
+        .matched { 
+            background-color: green; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Juego de Memoria Personalizado</h1>
+    <p>Turno de: <span id="player-turn">DAVOO</span></p>
+    <p>Puntaje DAVOO: <span id="score1">0</span> | Puntaje LA COBRAAA: <span id="score2">0</span></p>
+    <input type="file" id="imageInput" multiple accept="image/*">
+    <button onclick="startGame()">Cargar Imágenes</button>
+    <button onclick="beginGame()" id="beginButton" style="display:none;">Comenzar</button>
+    <div id="game-board"></div>
+
+    <script>
+        let images = [];
+        let currentPlayer = 1;
+        let scores = { 1: 0, 2: 0 };
+
+        function startGame() {
+            const input = document.getElementById('imageInput');
+            const files = Array.from(input.files);
+            if (files.length < 2) {
+                alert('Sube al menos 2 imágenes');
+                return;
+            }
+            images = [...files, ...files]; // Duplicamos para hacer los pares
+            images.sort(() => Math.random() - 0.5);
+            
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            board.style.position = 'relative';
+            images.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const div = document.createElement('div');
+                    div.classList.add('card');
+                    div.dataset.index = index;
+                    div.innerHTML = `<img src="${e.target.result}" alt="img">`;
+                    div.addEventListener('click', flipCard);
+                    board.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('beginButton').style.display = 'block';
+        }
+
+        function beginGame() {
+            document.getElementById('game-board').style.visibility = 'visible';
+            mixCards();
+            setTimeout(() => {
+                arrangeCards();
+                document.getElementById('beginButton').style.display = 'none';
+            }, 2000);
+        }
+
+        function mixCards() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.style.top = `${Math.random() * 500}px`;
+                card.style.left = `${Math.random() * 500}px`;
+            });
+        }
+
+        function arrangeCards() {
+            const board = document.getElementById('game-board');
+            const cards = Array.from(board.children);
+            cards.sort(() => Math.random() - 0.5);
+            
+            let row = 0, col = 0;
+            cards.forEach(card => {
+                card.style.gridRow = row + 1;
+                card.style.gridColumn = col + 1;
+                col++;
+                if (col >= 10) {
+                    col = 0;
+                    row++;
+                }
+            });
+        }
+
+        let firstCard, secondCard;
+        function flipCard() {
+            if (this.classList.contains('flipped') || secondCard) return;
+            this.classList.add('flipped');
+            if (!firstCard) {
+                firstCard = this;
+            } else {
+                secondCard = this;
+                setTimeout(checkMatch, 1000);
+            }
+        }
+
+        function checkMatch() {
+            if (firstCard.innerHTML === secondCard.innerHTML) {
+                scores[currentPlayer]++;
+                document.getElementById(`score${currentPlayer}`).innerText = scores[currentPlayer];
+                firstCard.classList.add('matched');
+                secondCard.classList.add('matched');
+                firstCard = secondCard = null;
+            } else {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                firstCard = secondCard = null;
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                document.getElementById('player-turn').innerText = currentPlayer === 1 ? 'DAVOO' : 'LA COBRAAA';
+            }
+        }
+    </script>
+</body>
+</html>
